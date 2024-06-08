@@ -132,7 +132,7 @@ return dbAdmin:tables()`)
             {
                 queryVisible && <div className="absolute left-0 top-0 overflow-scroll w-screen h-screen p-5 flex items-center justify-center bg-black/15">
                     <div className="ring-1 rounded-md ring-black p-2 bg-white flex flex-col gap-2 w-1/2 overflow-scroll">
-                        <textarea placeholder="Type SQL Query here" className="p-1 rounded-md min-h-[50px] max-h-[200px]" onChange={e => setQuery(e.target.value)} />
+                        <textarea value={query} placeholder="Type SQL Query here" className="p-1 rounded-md min-h-[50px] max-h-[200px]" onChange={e => setQuery(e.target.value)} />
                         {output && <pre className="text-left font-mono max-h-[400px] overflow-scroll">{output}</pre>}
                         <button className="bg-green-400 p-1 px-2 rounded-md" onClick={runQuery}>Run</button>
                         <button onClick={() => setQueryVisible(false)}>close</button>
