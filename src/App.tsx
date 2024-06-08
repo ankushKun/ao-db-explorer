@@ -31,8 +31,11 @@ function App() {
     const [tables, setTables] = useState<string[]>([])
     const [activeTable, setActiveTable] = useState<string>("")
     const [rows, setRows] = useState<any[]>([])
+    const [queryVisible, setQueryVisible] = useState<boolean>(false)
+    const [query, setQuery] = useState<string>("")
+    const [output, setOutput] = useState<string>("")
 
-    const[status, setStatus] = useState<string[]>(["status"])
+    const [status, setStatus] = useState<string[]>(["status"])
 
     function addStatus(s: string) {
         // max length of status should be 3
@@ -105,25 +108,45 @@ return dbAdmin:tables()`)
     }
 
 
-    // async function addRow(){
-
-    // }
+    async function runQuery() {
+        if (!pid) return alert("please enter a process id first")
+        if (!query) return alert("please enter a query")
+        addStatus("running query")
+        const res = await runLua(pid, `return dbAdmin:exec([[${query}]])`)
+        console.log(res)
+        if (res.Error) return alert(res.Error)
+        setOutput(JSON.stringify(res.Output.data.json, null, 2))
+        addStatus("query executed!")
+    }
 
     return (
-        <div className=" min-h-screen max-w-screen">
+        <div className="max-w-screen">
             <div className="absolute left-1 top-1">{
                 status.map((s, i) => (
                     <div key={i} className="text-xs text-left text-red-400">[{s}]</div>
                 ))
             }</div>
+            <div className="absolute right-1 top-1">
+                <button className="bg-green-400 p-1 px-2 rounded-md" onClick={() => setQueryVisible(true)}>write query</button>
+            </div>
+            {
+                queryVisible && <div className="absolute left-0 top-0 overflow-scroll w-screen h-screen p-5 flex items-center justify-center bg-black/15">
+                    <div className="ring-1 rounded-md ring-black p-2 bg-white flex flex-col gap-2 w-1/2 overflow-scroll">
+                        <textarea placeholder="Type SQL Query here" className="p-1 rounded-md min-h-[50px] max-h-[200px]" onChange={e => setQuery(e.target.value)} />
+                        {output && <pre className="text-left font-mono max-h-[400px] overflow-scroll">{output}</pre>}
+                        <button className="bg-green-400 p-1 px-2 rounded-md" onClick={runQuery}>Run</button>
+                        <button onClick={() => setQueryVisible(false)}>close</button>
+                    </div>
+                </div>
+            }
             <div className="text-center font-medium my-2 text-2xl">AO DB Explorer</div>
 
             <div className="mx-auto w-fit">
-            <input placeholder="enter sqlite3 process id" onChange={e => setPid(e.target.value)} className="ring-1 ring-black rounded-md p-1 px-2" />
-            <button className="rounded-md bg-green-300 p-1 px-2 inline-block mx-2" onClick={loadProcess}>load</button>
+                <input placeholder="enter sqlite3 process id" onChange={e => setPid(e.target.value)} className="ring-1 ring-black rounded-md p-1 px-2" />
+                <button className="rounded-md bg-green-300 p-1 px-2 inline-block mx-2" onClick={loadProcess}>load</button>
             </div>
             <hr className="mt-4" />
-            <div className="flex h-screen w-screen overflow-scroll font-mono">
+            <div className="flex w-screen overflow-scroll font-mono">
                 <div className="border-r">
                     <div className="border-b text-center">Tables ({tables.length})</div>
                     {
