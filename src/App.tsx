@@ -24,6 +24,9 @@ async function runLua(pid: string, code: string) {
     return res
 }
 
+export const stripAnsiCodes = (str: string): string => str.replace(/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, "");
+
+
 function App() {
     const [_, setAddress] = useState("")
     const [pid, setPid] = useState("")
@@ -82,12 +85,22 @@ function App() {
         const newDba = await runLua(pid, `db = db or sqlite3.open_memory()
 dbAdmin = require('DbAdmin').new(db)
 
-return dbAdmin:tables()`)
+return require('json').encode(dbAdmin:tables())`)
         console.log(newDba)
         if (newDba.Error) return alert(newDba.Error)
 
-        setTables(newDba.Output.data.json)
-        addStatus(`${newDba.Output.data.json.length} tables fetched!`)
+        try {
+            if(newDba.Output.data.json == "undefined"){
+                const r = stripAnsiCodes(newDba.Output.data.output)
+                setTables(JSON.parse(r))
+                addStatus(`${JSON.parse(r).length} tables fetched!`)
+            }else{
+            setTables(newDba.Output.data.json)
+                addStatus(`${newDba.Output.data.json.length} tables fetched!`)
+            }
+        } catch (e) {
+            return alert(e)
+        }
 
     }
 
@@ -97,13 +110,26 @@ return dbAdmin:tables()`)
         setRows([])
 
         addStatus(`fetching rows from ${name}`)
-        const selRes = await runLua(pid, `return dbAdmin:exec("SELECT * FROM ${name}")`)
+        const selRes = await runLua(pid, `return require('json').encode(dbAdmin:exec("SELECT * FROM ${name}"))`)
         console.log(selRes)
 
         if (selRes.Error) return alert(selRes.Error)
 
-        setRows(selRes.Output.data.json)
-        addStatus(`${selRes.Output.data.json.length} rows fetched!`)
+        // setRows(selRes.Output.data.json)
+        // addStatus(`${selRes.Output.data.json.length} rows fetched!`)
+
+        try {
+            if(selRes.Output.data.json == "undefined"){
+                const r = stripAnsiCodes(selRes.Output.data.output)
+                setRows(JSON.parse(r))
+                addStatus(`${JSON.parse(r).length} rows fetched!`)
+            }else{
+            setRows(selRes.Output.data.json)
+                addStatus(`${selRes.Output.data.json.length} rows fetched!`)
+            }
+        } catch (e) {
+            return alert(e)
+        }
 
     }
 
@@ -115,8 +141,20 @@ return dbAdmin:tables()`)
         const res = await runLua(pid, `return dbAdmin:exec([[${query}]])`)
         console.log(res)
         if (res.Error) return alert(res.Error)
-        setOutput(JSON.stringify(res.Output.data.json, null, 2))
-        addStatus("query executed!")
+        // setOutput(JSON.stringify(res.Output.data.json, null, 2))
+        // addStatus("query executed!")
+        try {
+            if(res.Output.data.json == "undefined"){
+                const r = stripAnsiCodes(res.Output.data.output)
+                setOutput(r)
+                addStatus("query executed!")
+            }else{
+            setOutput(JSON.stringify(res.Output.data.json, null, 2))
+                addStatus("query executed!")
+            }
+        } catch (e) {
+            return alert(e)
+        }
     }
 
     return (
@@ -176,7 +214,7 @@ return dbAdmin:tables()`)
                                         <tr key={i}>
                                             {
                                                 Object.values(row).reverse().map((val: any, j) => (
-                                                    <td key={j} className="max-w-[250px] p-1 text-center overflow-scroll border">{val}</td>
+                                                    <td key={j} className="max-w-[250px] p-1 text-center whitespace-nowrap overflow-scroll border">{val}</td>
                                                 ))
                                             }
                                         </tr>
